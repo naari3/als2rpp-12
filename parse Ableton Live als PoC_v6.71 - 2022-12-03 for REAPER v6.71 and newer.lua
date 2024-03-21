@@ -8597,6 +8597,8 @@ function useDataFrom_AudioClipXMLTable(
 	local LiveAudioClip_Color
 	local LiveAudioClip_Disabled
 	local LiveAudioClip_IsWarped
+	local LiveAudioClip_PitchCoarse = 0
+	local LiveAudioClip_PitchFine = 0
 	
 	-- GET TRACK NAME FOR WARNINGS etc.
 	local retval, thisTrackName = reaper.GetTrackName(given_RPRtrack,'')
@@ -8708,6 +8710,18 @@ function useDataFrom_AudioClipXMLTable(
 		end--if
 		
 		
+		if string.match(given_AudioClipXMLTable[i],'<PitchCoarse Value="')
+		then												
+			LiveAudioClip_PitchCoarse = tonumber(getValueFrom_SingleLineXMLTag(given_AudioClipXMLTable,i,'<PitchCoarse Value="','" />'))		
+			--reaper.ShowConsoleMsg('\n                LiveAudioClip_PitchCoarse:"'..LiveAudioClip_PitchCoarse..'"')	
+		end--if
+		
+
+		if string.match(given_AudioClipXMLTable[i],'<PitchFine Value="')
+		then												
+			LiveAudioClip_PitchFine = tonumber(getValueFrom_SingleLineXMLTag(given_AudioClipXMLTable,i,'<PitchFine Value="','" />'))		
+			--reaper.ShowConsoleMsg('\n                LiveAudioClip_PitchFine:"'..LiveAudioClip_PitchFine..'"')	
+		end--if
 	end--for i
 	
 
@@ -8829,6 +8843,8 @@ function useDataFrom_AudioClipXMLTable(
 	local LiveAudioClip_ColorIndex
 	local LiveAudioClip_Disabled
 	local LiveAudioClip_IsWarped
+	local LiveAudioClip_PitchCoarse
+	local LiveAudioClip_PitchFine
 	
 	------------------------------------------------------]]
 
@@ -8848,6 +8864,8 @@ function useDataFrom_AudioClipXMLTable(
 							..", StartRelative: "..LiveAudioClip_StartRelative
 							..", LoopOn: "..LiveAudioClip_LoopOn
 							..", IsWarped: "..LiveAudioClip_IsWarped
+							..", PitchCoarse: "..LiveAudioClip_PitchCoarse
+							..", PitchFine: "..LiveAudioClip_PitchFine
 							)
 
 
@@ -9425,6 +9443,18 @@ function useDataFrom_AudioClipXMLTable(
 		reaper.SetMediaItemInfo_Value(newAudioItem,'B_MUTE',1)
 	end
 	
+
+	---------------------
+	-- SET PITCH
+	---------------------
+	if LiveAudioClip_PitchCoarse ~= 0 or LiveAudioClip_PitchFine ~= 0
+	then
+		reaper.SetMediaItemTakeInfo_Value(	currentTake,  				-- MediaItem_Take take,
+			'D_PITCH',  												-- string parmname
+			LiveAudioClip_PitchCoarse + LiveAudioClip_PitchFine * 0.01	-- number newvalue
+		)
+	end
+	
 	
 	-----------------------
 	-- GET AND SET MARKERS 
@@ -9547,8 +9577,8 @@ function useDataFrom_MainSequencerXMLTable(
 																		)
 																		
 			
-			--reaper.ShowConsoleMsg("\n    AudioClip_XMLTable indices:"..#AudioClip_XMLTable)
-			--printTableToConsole(AudioClip_XMLTable,'AudioClip_XMLTable')-- given_Table,given_TableName
+			reaper.ShowConsoleMsg("\n    AudioClip_XMLTable indices:"..#AudioClip_XMLTable)
+			printTableToConsole(AudioClip_XMLTable,'AudioClip_XMLTable')-- given_Table,given_TableName
 		
 			useDataFrom_AudioClipXMLTable(
 								AudioClip_XMLTable,			--given_AudioClip_XMLTable,
