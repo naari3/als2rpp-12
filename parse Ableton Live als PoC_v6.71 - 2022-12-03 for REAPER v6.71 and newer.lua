@@ -8558,7 +8558,7 @@ function useDataFrom_AudioClipXMLTable(
 								given_RPRtrack
 								)
 	
-	local LiveAudioClip_WarpMarkersXMLTable
+	local LiveAudioClip_WarpMarkersXMLTable = {}
 	
 	local LiveAudioClip_CurrentStart
 	local LiveAudioClip_CurrentEnd
@@ -9378,7 +9378,7 @@ function useDataFrom_AudioClipXMLTable(
 	local current_StretchMarker_SecTime = 0
 	local current_StretchMarker_BeatTime_InQN = 0
 	local current_StretchMarker_BeatTime = 0
-	
+
 	for n=1,#LiveAudioClip_WarpMarkersXMLTable,1
 	do
 		if string.match(LiveAudioClip_WarpMarkersXMLTable[n],'<WarpMarker Id="')
