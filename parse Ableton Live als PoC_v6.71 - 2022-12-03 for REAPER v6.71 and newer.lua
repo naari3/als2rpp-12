@@ -13,6 +13,10 @@ local LogFileContent = ''
 ticksPerQuarterNote = 960  --INTENTIONALLY GLOBAL; DON'T CHANGE UNLESS YOU KNOW WHAT YOU'RE DOING
 
 
+-- Setup package path locations to find rtk via ReaPack
+local entrypath = ({reaper.get_action_context()})[2]:match('^.+[\\//]')
+package.path = string.format('%s?.lua;', entrypath)
+local rtk = require('rtk')
 
 --------------------------------------------------------------
 -- INITIAL INFORMATION FOR THE USER
@@ -7548,37 +7552,42 @@ function useDataFrom_KeyTracksXMLTable(
 			do
 				if string.match(currentKeyTrackTagTable[k],'<MidiNoteEvent')
 				then
-						
 					local MidiNoteEvent_string = currentKeyTrackTagTable[k]
+					local root = rtk.xmlparse(string.gsub(MidiNoteEvent_string, " />$", "></MidiNoteEvent>"))
 				
-					currentMIDInote_OnTime = string.sub(MidiNoteEvent_string, 
-								string.find(MidiNoteEvent_string,'Time="')+6,
-								string.find(MidiNoteEvent_string,'" Duration')-1)
-					currentMIDInote_OnTime = tonumber(currentMIDInote_OnTime)
+					-- currentMIDInote_OnTime = string.sub(MidiNoteEvent_string, 
+					-- 			string.find(MidiNoteEvent_string,'Time="')+6,
+					-- 			string.find(MidiNoteEvent_string,'" Duration')-1)
+					-- currentMIDInote_OnTime = tonumber(currentMIDInote_OnTime)
+					currentMIDInote_OnTime = tonumber(root.attrs.Time.value)
 
 					
-					currentMIDInote_Duration = string.sub(MidiNoteEvent_string,
-								string.find(MidiNoteEvent_string,'Duration="')+10,
-								string.find(MidiNoteEvent_string,'" Velocity')-1)
-					currentMIDInote_Duration = tonumber(currentMIDInote_Duration)
+					-- currentMIDInote_Duration = string.sub(MidiNoteEvent_string,
+					-- 			string.find(MidiNoteEvent_string,'Duration="')+10,
+					-- 			string.find(MidiNoteEvent_string,'" Velocity')-1)
+					-- currentMIDInote_Duration = tonumber(currentMIDInote_Duration)
+					currentMIDInote_Duration = tonumber(root.attrs.Duration.value)
 	
 	
 					currentMIDInote_OffTime = currentMIDInote_OnTime+currentMIDInote_Duration
 
 					
-					currentMIDInote_OnVelocity = string.sub(MidiNoteEvent_string,
-								string.find(MidiNoteEvent_string,'Velocity="')+10,
-								string.find(MidiNoteEvent_string,'" OffVelocity')-1)
-					currentMIDInote_OnVelocity = math.floor(tonumber(currentMIDInote_OnVelocity)+0.5)
+					-- currentMIDInote_OnVelocity = string.sub(MidiNoteEvent_string,
+					-- 			string.find(MidiNoteEvent_string,'Velocity="')+10,
+					-- 			string.find(MidiNoteEvent_string,'" OffVelocity')-1)
+					-- currentMIDInote_OnVelocity = math.floor(tonumber(currentMIDInote_OnVelocity)+0.5)
+					currentMIDInote_OnVelocity = tonumber(root.attrs.Velocity.value)
 					
-					currentMIDInote_OffVelocity = string.sub(MidiNoteEvent_string,
-								string.find(MidiNoteEvent_string,'OffVelocity="')+13,
-								string.find(MidiNoteEvent_string,'" IsEnabled')-1)
-					currentMIDInote_OffVelocity = math.floor(tonumber(currentMIDInote_OffVelocity)+0.5)
+					-- currentMIDInote_OffVelocity = string.sub(MidiNoteEvent_string,
+					-- 			string.find(MidiNoteEvent_string,'OffVelocity="')+13,
+					-- 			string.find(MidiNoteEvent_string,'" IsEnabled')-1)
+					-- currentMIDInote_OffVelocity = math.floor(tonumber(currentMIDInote_OffVelocity)+0.5)
+					currentMIDInote_OffVelocity = tonumber(root.attrs.OffVelocity.value)
 					
-					currentMIDInote_IsEnabled = string.sub(MidiNoteEvent_string,
-								string.find(MidiNoteEvent_string,'IsEnabled="')+11,
-								string.find(MidiNoteEvent_string,'" />')-1)
+					-- currentMIDInote_IsEnabled = string.sub(MidiNoteEvent_string,
+					-- 			string.find(MidiNoteEvent_string,'IsEnabled="')+11,
+					-- 			string.find(MidiNoteEvent_string,'" />')-1)
+					currentMIDInote_IsEnabled = root.attrs.IsEnabled.value
 					
 
 					currentMIDInote_IsMuted_boolean = false
@@ -8068,6 +8077,8 @@ function useDataFrom_MidiClipXMLTable(
 	local LiveMidiClip_OUTER_EnvelopesXMLTable
 	--local LiveMidiClip_GrooveSettingsXMLTable
 	local LiveMidiClip_KeyTracksXMLTable
+	local LiveMidiClip_ColorIndex
+	local LiveMidiClip_Color
 
 
 -- ! ! ! -------------------------------------------------------------
@@ -8132,6 +8143,14 @@ function useDataFrom_MidiClipXMLTable(
 			LiveMidiClip_ColorIndex = getValueFrom_SingleLineXMLTag(given_MidiClipXMLTable,i,'<ColorIndex Value="','" />')		
 			--reaper.ShowConsoleMsg('\n                LiveMidiClip_ColorIndex:"'..LiveMidiClip_ColorIndex..'"')
 			LiveMidiClip_ColorIndex = tonumber(LiveMidiClip_ColorIndex)			
+		end--if
+
+
+		if string.match(given_MidiClipXMLTable[i],'<Color Value="')
+		then												
+			LiveMidiClip_Color = getValueFrom_SingleLineXMLTag(given_MidiClipXMLTable,i,'<Color Value="','" />')		
+			--reaper.ShowConsoleMsg('\n                LiveMidiClip_Color:"'..LiveMidiClip_Color..'"')
+			LiveMidiClip_Color = tonumber(LiveMidiClip_Color)			
 		end--if
 
 
@@ -8364,11 +8383,18 @@ function useDataFrom_MidiClipXMLTable(
 	------------------------------------------
 	-- SET ITEM COLOR
 	------------------------------------------
-	if LiveMidiClip_ColorIndex > -1 and  LiveMidiClip_ColorIndex < 70
+	local colorIndex
+	if colorIndex ~= nil
+	then
+		colorIndex = LiveMidiClip_ColorIndex
+	else
+		colorIndex = LiveMidiClip_Color
+	end
+	if colorIndex > -1 and  colorIndex < 70
 	then
 		for l=0,69,1  --NOTE: intentional manual values; #Live10_ColorIndexTable doesn't appear to work
 		do
-			if l == LiveMidiClip_ColorIndex
+			if l == colorIndex
 			then
 				local ClipColor = reaper.ColorToNative(
 											Live10_ClipColorIndexTable[l][1],
@@ -8568,6 +8594,7 @@ function useDataFrom_AudioClipXMLTable(
 	local LiveAudioClip_LoopOn
 	local LiveAudioClip_Name
 	local LiveAudioClip_ColorIndex
+	local LiveAudioClip_Color
 	local LiveAudioClip_Disabled
 	local LiveAudioClip_IsWarped
 	
@@ -8652,6 +8679,13 @@ function useDataFrom_AudioClipXMLTable(
 		end--if
 
 
+		if string.match(given_AudioClipXMLTable[i],'<Color Value="')
+		then												
+			LiveAudioClip_Color = tonumber(getValueFrom_SingleLineXMLTag(given_AudioClipXMLTable,i,'<Color Value="','" />'))		
+			--reaper.ShowConsoleMsg('\n                LiveAudioClip_Color:"'..LiveAudioClip_Color..'"')			
+		end--if
+
+
 		if string.match(given_AudioClipXMLTable[i],'<Disabled Value="')
 		then												
 			LiveAudioClip_Disabled = getValueFrom_SingleLineXMLTag(given_AudioClipXMLTable,i,'<Disabled Value="','" />')		
@@ -8684,6 +8718,7 @@ function useDataFrom_AudioClipXMLTable(
 	local LiveAudioClip_FileRef_Name = ''
 	local LiveAudioClip_FileRef_DataTable = ''	
 	local LiveAudioClip_FileRef_DataString = ''
+	local LiveAudioClip_FileRef_Path = ''
 	
 	
 	-- GO BACKWARDS FROM TABLE END
@@ -8720,6 +8755,12 @@ function useDataFrom_AudioClipXMLTable(
 					
 					break--enclosing for loop
 					
+				end--if
+
+				if string.match(LiveAudioClip_SampleRefXMLTable[k],'<Path Value="')
+				then												
+					LiveAudioClip_FileRef_Path = getValueFrom_SingleLineXMLTag(LiveAudioClip_SampleRefXMLTable,k,'<Path Value="','" />')		
+					--reaper.ShowConsoleMsg('\n                LiveAudioClip_FileRef_Name:"'..LiveAudioClip_FileRef_Name..'"')	
 				end--if
 			end--for k
 			
@@ -9146,7 +9187,13 @@ function useDataFrom_AudioClipXMLTable(
 	-----------------------------------
 	local newAudioItem = reaper.AddMediaItemToTrack(given_RPRtrack)
 	local currentTake = reaper.AddTakeToMediaItem(newAudioItem) --reaper.GetTake(newAudioItem,0)
-	local currentSource = reaper.PCM_Source_CreateFromFile(LiveAudioClip_FileRef_DataString)
+	local currentSource
+	if LiveAudioClip_FileRef_DataString ~= ""
+	then
+		currentSource = reaper.PCM_Source_CreateFromFile(LiveAudioClip_FileRef_DataString)
+	else
+		currentSource = reaper.PCM_Source_CreateFromFile(LiveAudioClip_FileRef_Path)
+	end
 	
 	reaper.SetMediaItemTake_Source(currentTake,currentSource)
 			
@@ -9344,11 +9391,18 @@ function useDataFrom_AudioClipXMLTable(
 	------------------------------------------
 	-- SET ITEM COLOR
 	------------------------------------------
-	if LiveAudioClip_ColorIndex > -1 and  LiveAudioClip_ColorIndex < 70
+	local colorIndex
+	if LiveAudioClip_ColorIndex ~= nil
+	then
+		colorIndex = LiveAudioClip_ColorIndex
+	else
+		colorIndex = LiveAudioClip_Color
+	end
+	if colorIndex > -1 and  colorIndex < 70
 	then
 		for l=0,69,1  --NOTE: intentional manual values; #Live10_ColorIndexTable doesn't appear to work
 		do
-			if l == LiveAudioClip_ColorIndex
+			if l == colorIndex
 			then
 				local ClipColor = reaper.ColorToNative(
 											Live10_ClipColorIndexTable[l][1],
@@ -9855,6 +9909,8 @@ function useDataFrom_TrackXMLTable(given_TrackXMLTable)
 	
 	local Live_TrackEffectiveName = 'no name found'
 	local LiveColorIndexValue
+	local LiveColorValue
+	local colorValue
 	local AutomationEnvelopes_XMLTable = {}
 	local OUTER_DeviceChain_XMLTable
 
@@ -9898,6 +9954,17 @@ function useDataFrom_TrackXMLTable(given_TrackXMLTable)
 			LiveColorIndexValue = tonumber(getValueFrom_SingleLineXMLTag(given_TrackXMLTable,i,'<ColorIndex Value="','" />'))	
 		end--if
 		
+		if string.match(given_TrackXMLTable[i],'<Color Value="')
+		then
+			LiveColorValue = tonumber(getValueFrom_SingleLineXMLTag(given_TrackXMLTable,i,'<Color Value="','" />'))	
+		end--if
+
+		if LiveColorIndexValue ~= nil
+		then
+			colorValue = LiveColorIndexValue
+		else
+			colorValue = LiveColorValue
+		end
 		
 		-------------------------------------------------------------------------
 		-- GET XML CONTAINING THIS ENVELOPE LANES AND POINTS 
@@ -9976,11 +10043,11 @@ function useDataFrom_TrackXMLTable(given_TrackXMLTable)
 	------------------------------------------
 	-- SET TRACK COLOR
 	------------------------------------------
-	if LiveColorIndexValue > 139 and  LiveColorIndexValue < 210
+	if colorValue > 139 and  colorValue < 210
 	then
 		for l=140,209,1  --NOTE: intentional manual values; #Live10_ColorIndexTable doesn't appear to work
 		do
-			if l == LiveColorIndexValue
+			if l == colorValue
 			then
 				-- SET TRACK COLOR
 				local TrackColor = reaper.ColorToNative(
