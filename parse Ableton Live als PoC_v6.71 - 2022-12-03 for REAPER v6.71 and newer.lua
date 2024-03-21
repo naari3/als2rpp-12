@@ -10067,7 +10067,8 @@ function useDataFrom_TrackXMLTable(given_TrackXMLTable)
 	-- SET TRACK NAME
 	-------------------
 	local retval, stateChunkOfCurrentTrack =  reaper.GetTrackStateChunk(trackCurrentlyWorkedOn,"",false)
-	stateChunkOfCurrentTrack=string.gsub(stateChunkOfCurrentTrack,'NAME ""','NAME "'..Live_TrackEffectiveName..'"')
+	local escapedTrackEffectiveName = Live_TrackEffectiveName:gsub('%%','%%%%')
+	stateChunkOfCurrentTrack=string.gsub(stateChunkOfCurrentTrack,'NAME ""','NAME "'..escapedTrackEffectiveName..'"')
 	reaper.SetTrackStateChunk(trackCurrentlyWorkedOn,stateChunkOfCurrentTrack,false)
 
 	------------------------------------------
