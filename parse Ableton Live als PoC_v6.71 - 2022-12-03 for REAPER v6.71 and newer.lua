@@ -8702,7 +8702,7 @@ function useDataFrom_AudioClipXMLTable(
 		-- BREAK HERE -- INSIDE LAST if!  - BECAUSE NO DATA FROM TAGS LATER THAN THIS IS NEEDED
 		-- change place of this break if searches for tags after this are added
 		------------------------------------------------------------------------
-			break--enclosing for loop
+			-- break--enclosing for loop
 		------------------------------------------------------------------------
 			
 		end--if
